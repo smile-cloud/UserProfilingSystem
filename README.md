@@ -215,7 +215,7 @@ List<Map.Entry<String, Long>> topUsers = statsService.getTopNUsers(logs, 10);
 
 ## 技术栈
 
-- **后端**: Java 8+
+- **后端**: Java 17
 - **构建工具**: Maven
 - **数据存储**: ClickHouse (行为明细), MySQL (元数据)
 - **实时计算**: Kafka + Flink (设计支持)

@@ -5,7 +5,9 @@
       "Bash(mvn compile:*)",
       "Bash(mvn exec:java:*)",
       "Bash(chmod:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(java:*)",
+      "Bash(mvn:*)"
     ]
   }
 }
