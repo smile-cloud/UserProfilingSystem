@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(mvn compile:*)",
+      "Bash(mvn exec:java:*)",
+      "Bash(chmod:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
