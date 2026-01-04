@@ -26,8 +26,11 @@ public class UserProfileApplication {
 
         // 1. 生成模拟数据
         System.out.println("1. 正在生成模拟数据...");
-        LocalDateTime startTime = LocalDateTime.now().minusDays(7);
-        LocalDateTime endTime = LocalDateTime.now();
+        // 使用日期计算，确保正好覆盖7个自然日
+        java.time.LocalDate endDate = java.time.LocalDate.now();
+        java.time.LocalDate startDate = endDate.minusDays(6); // 今天和过去6天，共7天
+        LocalDateTime startTime = startDate.atStartOfDay(); // 当天0点开始
+        LocalDateTime endTime = endDate.atTime(23, 59, 59); // 当天23:59:59结束
 
         // 生成10000条日志
         List<NetflowLog> allLogs = MockDataGenerator.generateLogs(startTime, endTime, 10000);
@@ -144,15 +147,38 @@ public class UserProfileApplication {
     }
 
     /**
-     * 导出数据到文件
+     * 导出数据到文件（均匀采样不同日期的日志）
      */
     private static void exportDataToFile(List<NetflowLog> logs, Map<String, UserProfile> profiles, String filename) {
         try (FileWriter writer = new FileWriter(filename)) {
             writer.write("{\n");
             writer.write("  \"logs\": [\n");
 
-            for (int i = 0; i < Math.min(100, logs.size()); i++) {
-                NetflowLog log = logs.get(i);
+            // 按日期分组
+            Map<java.time.LocalDate, List<NetflowLog>> logsByDate = new HashMap<>();
+            for (NetflowLog log : logs) {
+                java.time.LocalDate date = log.getEventTime().toLocalDate();
+                logsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(log);
+            }
+
+            // 从每个日期均匀采样，总共最多100条
+            List<NetflowLog> sampledLogs = new ArrayList<>();
+            int samplesPerDate = Math.max(1, 100 / logsByDate.size());
+            for (List<NetflowLog> dateLogs : logsByDate.values()) {
+                // 每个日期随机采样
+                Collections.shuffle(dateLogs);
+                int sampleCount = Math.min(samplesPerDate, dateLogs.size());
+                sampledLogs.addAll(dateLogs.subList(0, sampleCount));
+            }
+
+            // 按时间排序
+            sampledLogs.sort(Comparator.comparing(NetflowLog::getEventTime));
+
+            // 限制最多100条
+            sampledLogs = sampledLogs.subList(0, Math.min(100, sampledLogs.size()));
+
+            for (int i = 0; i < sampledLogs.size(); i++) {
+                NetflowLog log = sampledLogs.get(i);
                 writer.write("    {\n");
                 writer.write("      \"timestamp\": \"" + log.getEventTime().format(FORMATTER) + "\",\n");
                 writer.write("      \"user_id\": \"" + log.getUserId() + "\",\n");
@@ -161,7 +187,7 @@ public class UserProfileApplication {
                 writer.write("      \"category\": \"" + log.getSiteCategory() + "\",\n");
                 writer.write("      \"bytes\": " + log.getBytes() + "\n");
                 writer.write("    }");
-                if (i < Math.min(100, logs.size()) - 1) {
+                if (i < sampledLogs.size() - 1) {
                     writer.write(",");
                 }
                 writer.write("\n");

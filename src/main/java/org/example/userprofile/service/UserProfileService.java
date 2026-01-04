@@ -25,16 +25,16 @@ public class UserProfileService {
         profile.setDepartment(logs.get(0).getDepartment());
         profile.setLastUpdateTime(LocalDateTime.now());
 
-        // 计算活跃天数
-        Set<Integer> activeDays = new HashSet<>();
+        // 计算活跃天数（使用LocalDate避免跨年问题）
+        Set<java.time.LocalDate> activeDates = new HashSet<>();
         for (NetflowLog log : logs) {
-            activeDays.add(log.getEventTime().getDayOfYear());
+            activeDates.add(log.getEventTime().toLocalDate());
         }
-        profile.setActiveDays(activeDays.size());
+        profile.setActiveDays(activeDates.size());
 
         // 计算日均访问次数
         int totalPv = logs.size();
-        profile.setAvgDailyPv(totalPv / Math.max(activeDays.size(), 1));
+        profile.setAvgDailyPv(totalPv / Math.max(activeDates.size(), 1));
 
         // 计算高峰时段
         profile.setPeakTimeSlot(calculatePeakTimeSlot(logs));
@@ -51,7 +51,7 @@ public class UserProfileService {
         // 计算总流量和日均流量
         long totalBytes = logs.stream().mapToLong(log -> log.getBytes() != null ? log.getBytes() : 0).sum();
         profile.setTotalBytes(totalBytes);
-        profile.setAvgDailyBytes(totalBytes / Math.max(activeDays.size(), 1));
+        profile.setAvgDailyBytes(totalBytes / Math.max(activeDates.size(), 1));
 
         // 计算风险等级
         profile.setRiskLevel(calculateRiskLevel(logs, profile));
